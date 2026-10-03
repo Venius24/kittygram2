@@ -1,43 +1,18 @@
-### Как запустить проект:
+# Kittygram 2
 
-Клонировать репозиторий и перейти в него в командной строке:
+Учебный Django REST API: коты, достижения и список пользователей. JWT аутентификация, уникальное имя кота у владельца, проверка года рождения и цвета.
 
-```
-git clone https://github.com/yandex-praktikum/kittygram2.git
-```
+## Локальный запуск
 
-```
-cd kittygram2
-```
+Нужен Python 3.9. В Windows:
 
-Cоздать и активировать виртуальное окружение:
-
-```
-python3 -m venv env
+```powershell
+py -3.9 -m venv .venv
+.venv\Scripts\python -m pip install -r requirements.txt
+.venv\Scripts\python manage.py migrate
+.venv\Scripts\python manage.py runserver
 ```
 
-```
-source env/bin/activate
-```
+В Linux/macOS используйте `.venv/bin/python`. Переменные `DJANGO_SECRET_KEY`, `DJANGO_DEBUG`, `DJANGO_ALLOWED_HOSTS` и необязательная `DJANGO_DB_PATH` описаны в `.env.example`; Django читает их из окружения, но не загружает `.env` сам. Для внешнего доступа установите собственный ключ, `DJANGO_DEBUG=0` и допустимые хосты.
 
-```
-python3 -m pip install --upgrade pip
-```
-
-Установить зависимости из файла requirements.txt:
-
-```
-pip install -r requirements.txt
-```
-
-Выполнить миграции:
-
-```
-python3 manage.py migrate
-```
-
-Запустить проект:
-
-```
-python3 manage.py runserver
-```
+Маршруты: `/cats/`, `/users/`, `/achievements/`, `/auth/jwt/create/`. Проверки: `python manage.py check`, `python manage.py test`. Старый ключ в истории Git требует отдельной ротации и очистки истории при развёртывании.

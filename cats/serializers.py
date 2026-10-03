@@ -1,9 +1,10 @@
 from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
+from django.db import transaction
 
 import datetime as dt
 
-from .models import CHOICES, Achievement, AchievementCat, Cat, User
+from .models import CHOICES, Achievement, Cat, User
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -51,24 +52,35 @@ class CatSerializer(serializers.ModelSerializer):
         return value
     
     def validate(self, data):
-        if data['color'] == data['name']:
+        if data.get('color', getattr(self.instance, 'color', None)) == data.get('name', getattr(self.instance, 'name', None)):
             raise serializers.ValidationError(
                 'Имя не может совпадать с цветом!')
         return data 
 
     def get_age(self, obj):
-        return dt.datetime.now().year - obj.birth_year
+        return dt.date.today().year - obj.birth_year
 
+    def _save_achievements(self, cat, achievements):
+        names = [item['name'] for item in achievements]
+        if len(names) != len(set(names)):
+            raise serializers.ValidationError({'achievements': 'Достижения не должны повторяться.'})
+        cat.achievements.set(
+            Achievement.objects.get_or_create(name=name)[0] for name in names
+        )
+
+    @transaction.atomic
     def create(self, validated_data):
-        if 'achievements' not in self.initial_data:
-            cat = Cat.objects.create(**validated_data)
-            return cat
-        else:
-            achievements = validated_data.pop('achievements')
-            cat = Cat.objects.create(**validated_data)
-            for achievement in achievements:
-                current_achievement, status = Achievement.objects.get_or_create(
-                    **achievement)
-                AchievementCat.objects.create(
-                    achievement=current_achievement, cat=cat)
-            return cat
+        achievements = validated_data.pop('achievements', [])
+        cat = Cat.objects.create(**validated_data)
+        self._save_achievements(cat, achievements)
+        return cat
+
+    @transaction.atomic
+    def update(self, instance, validated_data):
+        achievements = validated_data.pop('achievements', None)
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+        instance.save()
+        if achievements is not None:
+            self._save_achievements(instance, achievements)
+        return instance
